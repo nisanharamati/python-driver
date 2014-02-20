@@ -9,7 +9,11 @@ import socket
 import sys
 import time
 from threading import Lock, RLock, Thread, Event
-import Queue
+
+if sys.version_info.major < 3:
+    import Queue
+else:
+    import queue as Queue
 import weakref
 from weakref import WeakValueDictionary
 try:
@@ -1379,13 +1383,15 @@ class ControlConnection(object):
         for host in self._cluster.load_balancing_policy.make_query_plan():
             try:
                 return self._try_connect(host)
-            except ConnectionException as exc:
-                errors[host.address] = exc
-                log.warn("[control connection] Error connecting to %s:", host, exc_info=True)
-                self._cluster.signal_connection_failure(host, exc, is_host_addition=False)
-            except Exception as exc:
-                errors[host.address] = exc
-                log.warn("[control connection] Error connecting to %s:", host, exc_info=True)
+            #~ except ConnectionException as exc:
+                #~ errors[host.address] = exc
+                #~ log.warn("[control connection] Error connecting to %s:", host, exc_info=True)
+                #~ self._cluster.signal_connection_failure(host, exc, is_host_addition=False)
+            #~ except Exception as exc:
+                #~ errors[host.address] = exc
+                #~ log.warn("[control connection] Error connecting to %s:", host, exc_info=True)
+            except:
+                raise
 
         raise NoHostAvailable("Unable to connect to any servers", errors)
 

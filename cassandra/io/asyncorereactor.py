@@ -7,15 +7,20 @@ import sys
 from threading import Event, Lock, Thread
 import time
 import traceback
-import Queue
+try:
+    import queue as Queue
+except ImportError:
+    import Queue
 from errno import EALREADY, EINPROGRESS, EWOULDBLOCK, EINVAL, EISCONN, errorcode
 
 import asyncore
-
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO  # ignore flake8 warning: # NOQA
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO  # ignore flake8 warning: # NOQA
 
 try:
     import ssl
@@ -91,7 +96,7 @@ class AsyncoreConnection(Connection, asyncore.dispatcher):
 
     @classmethod
     def factory(cls, *args, **kwargs):
-        timeout = kwargs.pop('timeout', 5.0)
+        timeout = kwargs.pop('timeout', 2.0)
         conn = cls(*args, **kwargs)
         conn.connected_event.wait(timeout)
         if conn.last_error:
@@ -126,7 +131,7 @@ class AsyncoreConnection(Connection, asyncore.dispatcher):
 
         self._writable = True
         self._readable = True
-
+        
         # start the global event loop if needed
         _start_loop()
 
@@ -180,6 +185,10 @@ class AsyncoreConnection(Connection, asyncore.dispatcher):
             self.connected_event.set()
 
     def defunct(self, exc):
+        print("we've defuncted... {}".format(exc))
+        exit(1)
+        raise exc
+        
         with self.lock:
             if self.is_defunct or self.is_closed:
                 return
@@ -307,6 +316,7 @@ class AsyncoreConnection(Connection, asyncore.dispatcher):
                 log.exception("Pushed event handler errored, ignoring:")
 
     def push(self, data):
+        print('push', data)
         sabs = self.out_buffer_size
         if len(data) > sabs:
             chunks = []
@@ -340,9 +350,11 @@ class AsyncoreConnection(Connection, asyncore.dispatcher):
                     "Connection to %s is at the max number of requests" % self.host)
         else:
             request_id = self._id_queue.get()
-
+        
         self._callbacks[request_id] = cb
+        print('msg', msg)
         self.push(msg.to_string(request_id, compression=self.compressor))
+        print('send_msg', msg, cb, wait_for_id)
         return request_id
 
     def wait_for_response(self, msg, timeout=None):
@@ -377,7 +389,7 @@ class AsyncoreConnection(Connection, asyncore.dispatcher):
             return waiter.deliver(timeout)
         except OperationTimedOut:
             raise
-        except Exception, exc:
+        except Exception as exc:
             self.defunct(exc)
             raise
 

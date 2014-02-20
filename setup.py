@@ -62,11 +62,11 @@ class DocCommand(Command):
             except subprocess.CalledProcessError as exc:
                 raise RuntimeError("Documentation step '%s' failed: %s: %s" % (mode, exc, exc.output))
             else:
-                print output
+                print (output)
 
-            print ""
-            print "Documentation step '%s' performed, results here:" % mode
-            print "   %s/" % path
+            print ("")
+            print ("Documentation step '%s' performed, results here:" % mode)
+            print ("   %s/" % path)
 
 
 class BuildFailed(Exception):

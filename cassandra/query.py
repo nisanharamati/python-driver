@@ -108,7 +108,7 @@ class SimpleStatement(Statement):
 
     def __str__(self):
         consistency = ConsistencyLevel.value_to_name[self.consistency_level]
-        return (u'<SimpleStatement query="%s", consistency=%s>' %
+        return ('<SimpleStatement query="%s", consistency=%s>' %
                 (self.query_string, consistency))
     __repr__ = __str__
 
@@ -179,7 +179,7 @@ class PreparedStatement(object):
 
     def __str__(self):
         consistency = ConsistencyLevel.value_to_name[self.consistency_level]
-        return (u'<PreparedStatement query="%s", consistency=%s>' %
+        return ('<PreparedStatement query="%s", consistency=%s>' %
                 (self.query_string, consistency))
     __repr__ = __str__
 
@@ -278,7 +278,7 @@ class BoundStatement(Statement):
 
     def __str__(self):
         consistency = ConsistencyLevel.value_to_name[self.consistency_level]
-        return (u'<BoundStatement query="%s", values=%s, consistency=%s>' %
+        return ('<BoundStatement query="%s", values=%s, consistency=%s>' %
                 (self.prepared_statement.query_string, self.raw_values, consistency))
     __repr__ = __str__
 

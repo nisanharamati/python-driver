@@ -114,7 +114,9 @@ class Host(object):
 
     def __eq__(self, other):
         return self.address == other.address
-
+    
+    def __hash__(self):
+        return hash(self.address)
     def __str__(self):
         return self.address
 
@@ -338,7 +340,7 @@ class HostConnectionPool(object):
     def _create_new_connection(self):
         try:
             self._add_conn_if_under_max()
-        except (ConnectionException, socket.error), exc:
+        except (ConnectionException, socket.error) as exc:
             log.warn("Failed to create new connection to %s: %s", self.host, exc)
         except Exception:
             log.exception("Unexpectedly failed to create new connection")

@@ -9,15 +9,29 @@ import sys
 import types
 from uuid import UUID
 
+
+
 try:
     from collections import OrderedDict
 except ImportError:  # Python <2.7
     from cassandra.util import OrderedDict # NOQA
 
 try:
-    from cStringIO import StringIO
+    from io import BytesIO as StringIO
 except ImportError:
-    from StringIO import StringIO  # ignore flake8 warning: # NOQA
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO  # ignore flake8 warning: # NOQA
+
+    
+
+
+if sys.version_info.major >= 3:
+    unicode = str
+    buffer = memoryview
+    long = int
+
 
 from cassandra import (Unavailable, WriteTimeout, ReadTimeout,
                        AlreadyExists, InvalidRequest, Unauthorized)
@@ -62,7 +76,7 @@ def tuple_factory(colnames, rows):
 
 
 def named_tuple_factory(colnames, rows):
-    Row = namedtuple('Row', map(_clean_column_name, colnames))
+    Row = namedtuple('Row', list(map(_clean_column_name, colnames)))
     return [Row(*row) for row in rows]
 
 
@@ -112,8 +126,8 @@ class _MessageType(object):
         if self.tracing:
             flags |= 0x02
         msglen = int32_pack(len(body))
-        msg_parts = map(int8_pack, (version, flags, stream_id, self.opcode)) + [msglen, body]
-        return ''.join(msg_parts)
+        msg_parts = list(map(int8_pack, (version, flags, stream_id, self.opcode))) + [msglen, body]
+        return b''.join(msg_parts)
 
     def send(self, f, streamid, compression=None):
         body = StringIO()
@@ -127,7 +141,7 @@ class _MessageType(object):
         if self.tracing:
             flags |= 0x02
         msglen = int32_pack(len(body))
-        header = ''.join(map(int8_pack, (version, flags, streamid, self.opcode))) \
+        header = b''.join(map(int8_pack, (version, flags, streamid, self.opcode))) \
                  + msglen
         f.write(header)
         if len(body) > 0:
@@ -160,6 +174,7 @@ def decode_response(stream_id, flags, opcode, body, decompressor=None):
     msg = msg_class.recv_body(body)
     msg.stream_id = stream_id
     msg.trace_id = trace_id
+    
     return msg
 
 
@@ -840,11 +855,7 @@ def cql_encode_all_types(val):
 
 cql_encoders = {
     float: cql_encode_object,
-    buffer: cql_encode_bytes,
     bytearray: cql_encode_bytes,
-    str: cql_encode_str,
-    unicode: cql_encode_unicode,
-    types.NoneType: cql_encode_none,
     int: cql_encode_object,
     long: cql_encode_object,
     UUID: cql_encode_object,
@@ -858,3 +869,13 @@ cql_encoders = {
     frozenset: cql_encode_set_collection,
     types.GeneratorType: cql_encode_list_collection
 }
+
+if sys.version_info.major >= 3:
+    cql_encoders[str] = cql_encode_unicode
+    cql_encoders[None] = cql_encode_none
+    cql_encoders[memoryview] = cql_encode_bytes
+else:
+    cql_encoders[buffer] = cql_encode_bytes
+    cql_encoders[str] = cql_encode_str
+    cql_encoders[unicode] = cql_encode_unicode
+    cql_encoders[types.NoneType] = cql_encode_none

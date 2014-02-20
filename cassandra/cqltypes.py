@@ -21,11 +21,14 @@ import time
 from datetime import datetime
 from uuid import UUID
 import warnings
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO  # NOQA
+import sys
+if sys.version_info.major < 3:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO  # ignore flake8 warning: # NOQA
+else:
+    from io import StringIO, BytesIO
 
 from cassandra.marshal import (int8_pack, int8_unpack, uint16_pack, uint16_unpack,
                                int32_pack, int32_unpack, int64_pack, int64_unpack,
@@ -34,6 +37,8 @@ from cassandra.marshal import (int8_pack, int8_unpack, uint16_pack, uint16_unpac
 
 apache_cassandra_type_prefix = 'org.apache.cassandra.db.marshal.'
 
+if sys.version_info.major >= 3:
+    long = int
 _number_types = frozenset((int, long, float))
 
 try:
